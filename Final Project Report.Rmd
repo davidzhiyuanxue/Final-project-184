@@ -1,0 +1,133 @@
+---
+title: "Final Project Report" 
+subtitle: "NBA Team Game Stats"
+author: "Zhiyuan Xue"
+output: html_notebook
+---
+
+## Summary for the Project
+
+For my project I decided to look into NBA's depth team scoring data and historical scoring data to define the way that NBA game playing changes, to see what stats has changed and what may affect these changes. The data I used in this report are from Kaggle, they are collected by owners Ionas Kelepouris and Omri Goldstein from the website. These two datasets contain stats from every game during 2014 - 2018 nba period, 3000+ Players over 60+ Seasons, and 50+ features per player.
+
+## Data sources:
+1. https://www.kaggle.com/ionaskel/nba-games-stats-from-2014-to-2018/data
+2. https://www.kaggle.com/drgilermo/nba-players-stats
+
+## Front Matter
+
+```{r}
+# clean up workspace environment
+rm(list = ls())
+# all packages used for the assignment
+library(mosaic)
+library(tidyverse)
+```
+
+## Set up (Libraries used for the project)
+
+```{r}
+library(dplyr) 
+library(ggplot2)
+library(tidyverse)
+library(DataComputing)
+library(lubridate)
+```
+
+
+## Importing Datasets 
+
+```{r}
+#Data Access 
+NBAData <- read.csv("nba.games.stats.csv") 
+SeasonsData <- read.csv("Seasons_Stats.csv")
+head(NBAData)
+nrow(NBAData)
+head(AllTime)
+nrow(AllTime)
+```
+
+## Return The First Or Last Part Of the NBA dataset and the Season dataset.
+
+```{r}
+NBAData%>%head(15)
+```
+
+```{r}
+SeasonsData%>%head(15)
+```
+
+```{r}
+dim(NBAData)
+```
+There are 41 variables and 9840 cases in this total dataset.
+
+## Functions to define teams (West/East)
+
+```{r}
+#Custom function to determine if a team is East or West
+whichConf <- function(team){
+  if (team %in% c("DAL", "DEN", "GSW" ,"HOU", "LAC", 
+                  "LAL", "MEM", "MIN", "NOP", "OKC", 
+                  "PHO", "POR", "sAC", "SAS", "UTA")){
+    return("West")
+  }
+  else {
+    return("East")
+  }
+} #Wrangling 4 (Control flow with if-else statement)
+```
+
+### Visualization for changes of feild goals attempted for each team per year
+
+For the plots below that I visualized, are the feild goals attempted for each team from the year of 2014 to 2018. I used different colors for each team. 
+```{r}
+ModifiedNBA <-
+NBAData %>%
+  mutate(Date = year(lubridate::ymd(Date))) %>%  
+  group_by(Team,Date) %>%
+  summarise(AvgGoal = mean(FieldGoalsAttempted))  
+
+NewModified <-
+  ModifiedNBA %>%
+  mutate(Conf = whichConf(Team)) #Wrangling3 (Using my user defined function)
+
+NewModified %>%
+  ggplot(aes(x = Date, y = AvgGoal, group = Team)) +
+  geom_line(size = 2, alpha = 1, aes(color = Team)) +
+  facet_wrap(~Conf, dir = "v") #Visualization 1 and 2
+```
+
+## Visualization of Average rebound since 2000
+```{r}
+HistData <-
+AllTime %>%
+  filter(Year >= 2000)
+
+HistRebounds <-
+HistData %>%
+  group_by(Year) %>%
+  summarise(AvgReb = mean(TRB.))
+
+HistRebounds %>%
+  ggplot(aes(x = Year, y = AvgReb)) +
+  geom_point(na.rm = TRUE) +
+  geom_smooth(method = 'lm', se = FALSE, na.rm = TRUE) 
+```
+
+## Machine learning
+
+At the end of the project, I used machine learning to cluster the the total team points with Win or Loss status along with the field goals and feild goals attempted to observe the relationship. Lastly I used the linear regression model to determine whether or not FieldGoalsAttempted has an impact on field goals for my conclusion.
+
+```{r}
+ChooseTable<-NBAData%>%select(TeamPoints, WINorLOSS, FieldGoalsAttempted, FieldGoals)
+ChooseTable
+```
+
+```{r}
+linearMod <- lm(FieldGoalsAttempted ~ FieldGoals, data = NBAData)
+summary(linearMod)
+```
+
+
+## Conclusion
+Based on the comparision among the dataset, the the NBA has certainly changed in the way it plays. Teams average rebounds are geting lower since 2000 year since players are gaining heigher score of field goals, significantly increased the field goals leads to the field goals attempted increases. Thus, it has a slight impact on average rebound, which is gradually decreasing. Besides, I found that each games total team point is increasing dramatically since the field goal is geting higher from 2000. In other words, nowadays NBA is plajying games is a faster pace.
